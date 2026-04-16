@@ -189,7 +189,7 @@ const CAT_MAP={'Mortgage':'Housing','Rates':'Housing','Bill Electricity & Gas CC
 let CUSTOM={};
 const FB_URL='https://mm-budget-55735-default-rtdb.asia-southeast1.firebasedatabase.app';
 const FB_PATH='/budget/custom.json';
-const FB_BAL_PATH='/budget/balance.json';
+
 
 // ── LOCAL CACHE (instant reads) ───────────────────────────────────────────────
 function loadCustom(){
@@ -257,9 +257,16 @@ function syncFromFirebase(){
     .then(r=>r.json())
     .then(data=>{
       if(data!==null&&data!==undefined&&!isNaN(parseFloat(data))){
+        // Firebase has a balance — use it as source of truth
         try{localStorage.setItem('mm_current_balance',String(data));}catch(e){}
         renderBal();
         renderContent();
+      } else {
+        // Firebase has no balance — push local value up so other devices get it
+        const localBal=loadBal();
+        if(localBal!==null){
+          fetch(FB_URL+balPath,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(localBal)}).catch(()=>{});
+        }
       }
     })
     .catch(()=>{});
